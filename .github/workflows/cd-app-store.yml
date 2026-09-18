@@ -1,0 +1,124 @@
+name: CD - Deploy to App Store
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  XCODE_VERSION: 15.2
+  DEPLOYMENT_TARGET: 13.0
+
+jobs:
+  deploy-app-store:
+    name: Deploy to App Store
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: tag_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Set up Xcode
+        run: sudo xcode-select --switch /Applications/Xcode_15.2.app
+
+      - name: Install Fastlane
+        run: |
+          sudo gem install fastlane -NV
+          cd TestThrive && fastlane setup_ci
+
+      - name: Update version number
+        run: |
+          cd TestThrive
+          agvtool new-marketing-version ${{ steps.tag_version.outputs.version }}
+          agvtool new-version -all 1
+
+      - name: Build and sign for App Store
+        run: |
+          cd TestThrive
+          fastlane build_app_store
+        env:
+          FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+
+      - name: Deploy to App Store
+        run: |
+          cd TestThrive
+          fastlane upload_app_store
+        env:
+          FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            App Store Release v${{ steps.tag_version.outputs.version }}
+            
+            See [CHANGELOG](CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Slack - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ App Store Release v${{ steps.tag_version.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *App Store Release Successful*\n*Version:* ${{ steps.tag_version.outputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Release"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+                    }
+                  ]
+                }
+              ]
+            }
+
+      - name: Notify Slack - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ App Store Release Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❌ *App Store Release Failed*\n*Version:* ${{ steps.tag_version.outputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
+                  }
+                }
+              ]
+            }

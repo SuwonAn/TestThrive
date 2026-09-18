@@ -1,0 +1,50 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - nesting
+  - function_body_length
+  
+enabled_rules:
+  - force_cast
+  - force_try
+  - unused_import
+  - unused_variable
+  - cyclomatic_complexity
+  - type_name
+  - identifier_name
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - missing_docs
+
+line_length:
+  warning: 120
+  error: 200
+
+type_name:
+  warning: 30
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 50
+
+cyclomatic_complexity:
+  warning: 20
+  error: 30
+
+included:
+  - TestThrive
+
+excluded:
+  - TestThriveTests
+  - TestThriveUITests
+  - Pods
+  - build
