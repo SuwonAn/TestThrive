@@ -8,6 +8,7 @@ on:
 env:
   XCODE_VERSION: 15.2
   DEPLOYMENT_TARGET: 13.0
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
 jobs:
   build-and-deploy:
@@ -18,7 +19,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Xcode
-        run: sudo xcode-select --switch /Applications/Xcode_15.2.app
+        run: |
+          if [ -d "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" ]; then
+            sudo xcode-select --switch "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          else
+            sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
 
       - name: Install Fastlane
         run: |
@@ -49,10 +56,9 @@ jobs:
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
 
       - name: Notify Slack - Success
-        if: success()
+        if: success() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "✅ TestFlight Deployment Successful",
@@ -81,10 +87,9 @@ jobs:
             }
 
       - name: Notify Slack - Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "❌ TestFlight Deployment Failed",
