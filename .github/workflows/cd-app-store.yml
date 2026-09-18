@@ -8,6 +8,7 @@ on:
 env:
   XCODE_VERSION: 15.2
   DEPLOYMENT_TARGET: 13.0
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
 jobs:
   deploy-app-store:
@@ -22,7 +23,13 @@ jobs:
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Set up Xcode
-        run: sudo xcode-select --switch /Applications/Xcode_15.2.app
+        run: |
+          if [ -d "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" ]; then
+            sudo xcode-select --switch "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          else
+            sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
 
       - name: Install Fastlane
         run: |
@@ -66,10 +73,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify Slack - Success
-        if: success()
+        if: success() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "✅ App Store Release v${{ steps.tag_version.outputs.version }}",
@@ -98,10 +104,9 @@ jobs:
             }
 
       - name: Notify Slack - Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
           payload: |
             {
               "text": "❌ App Store Release Failed",
