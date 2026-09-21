@@ -31,7 +31,6 @@ struct TimelineTasksSectionView: View {
         Array(groups.prefix(Self.groupPageSize))
     }
     
-    
     private var hasMoreGroups: Bool {
         groups.count > Self.groupPageSize
     }
