@@ -3,6 +3,15 @@ workflows:
     name: iOS Free Build
     max_build_duration: 60
 
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'        # main 브랜치에 push될 때 자동 빌드 (필요시 'master'나 '*'로 변경)
+          include: true
+          source: true
+      cancel_previous_builds: true
+
     environment:
       xcode: latest
 
