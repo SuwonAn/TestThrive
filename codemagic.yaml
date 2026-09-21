@@ -7,22 +7,14 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Build iOS app
+      - name: Build iOS app (unsigned)
         script: |
           xcodebuild \
             -project "TestThrive.xcodeproj" \
             -scheme "TestThrive" \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath build/TestThrive.xcarchive archive
-
-      - name: Export unsigned IPA
-        script: |
-          xcodebuild -exportArchive \
-            -archivePath build/TestThrive.xcarchive \
-            -exportOptionsPlist ExportOptions.plist \
-            -exportPath build
+            build
 
     artifacts:
-      - build/*.ipa
-      - build/**/*.dSYM
+      - build/**/*.app
