@@ -107,9 +107,10 @@ final class APITaskRepository: TaskRepositoryProtocol {
     }
 
     private static func taskID(for todoID: Int) -> UUID {
-        
-        let safeID = max(todoID, 0)
-        let suffix = String(format: "%012llx", UInt64(safeID))
+        // Produce a deterministic UUID from the integer id by embedding
+        // a zero-padded 12-char hex suffix into the UUID string. Keep the
+        // result stable across runs for the same `todoID`.
+        let suffix = String(format: "%012x", UInt64(max(todoID, 0)))
         return UUID(uuidString: "00000000-0000-0000-0000-\(suffix)") ?? UUID()
     }
 
