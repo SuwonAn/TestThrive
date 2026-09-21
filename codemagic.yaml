@@ -1,4 +1,3 @@
-
 workflows:
   ios_free_build:
     name: iOS Free Build
@@ -6,27 +5,21 @@ workflows:
 
     environment:
       xcode: latest
-      cocoapods: default
 
     scripts:
-      - name: Install dependencies
-        script: |
-          brew install cocoapods || true
-          pod install
-
       - name: Build iOS app
         script: |
           xcodebuild \
-            -workspace "YourApp.xcworkspace" \
-            -scheme "YourApp" \
+            -project "TestThrive.xcodeproj" \
+            -scheme "TestThrive" \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath build/YourApp.xcarchive archive
+            -archivePath build/TestThrive.xcarchive archive
 
       - name: Export unsigned IPA
         script: |
           xcodebuild -exportArchive \
-            -archivePath build/YourApp.xcarchive \
+            -archivePath build/TestThrive.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
             -exportPath build
 
