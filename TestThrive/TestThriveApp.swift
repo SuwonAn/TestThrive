@@ -31,11 +31,7 @@ struct TestThriveApp: App {
                             .tabItem { Label("Home", systemImage: "house.fill") }
                             .tag(AppTab.home)
 
-//                        Text("Your Care")
-//                            .tabItem { Label("Your Care", systemImage: "building.2.fill") }
-//                            .tag(AppTab.yourCare)
-
-                        DualScreenDashboardView(viewModel: viewModel, coordinator: coordinator)
+                        Text("Your Care")
                             .tabItem { Label("Your Care", systemImage: "building.2.fill") }
                             .tag(AppTab.yourCare)
 
