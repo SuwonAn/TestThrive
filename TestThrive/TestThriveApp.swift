@@ -12,6 +12,7 @@ struct TestThriveApp: App {
     
     @StateObject private var viewModel: TaskDashboardViewModel
     @StateObject private var coordinator = AppCoordinator()
+    @State private var selectedTabLocal: AppTab = .home
 
     init() {
         // DI Container / Composition Root Assembly
@@ -25,7 +26,7 @@ struct TestThriveApp: App {
         WindowGroup {
             Group {
                 if viewModel.hasLoadedInitialData {
-                    TabView(selection: $coordinator.selectedTab) {
+                    TabView(selection: $selectedTabLocal) {
                         // Home Tab with Responsive Layout (adapts to any width, including dual-screen)
                         DualScreenDashboardView(viewModel: viewModel, coordinator: coordinator)
                             .tabItem { Label("Home", systemImage: "house.fill") }
@@ -44,6 +45,26 @@ struct TestThriveApp: App {
                             .tag(AppTab.healthProfile)
                     }
                     .tint(Color(red: 0.15, green: 0.25, blue: 0.45))
+                    // Keep coordinator and local selection in sync without
+                    // binding across actor boundaries.
+                    .onAppear {
+                        // initialize local selection from coordinator (MainActor)
+                        Task { @MainActor in
+                            selectedTabLocal = coordinator.selectedTab
+                        }
+                    }
+                    .onChange(of: selectedTabLocal) {
+                        // propagate local changes back to coordinator on MainActor
+                        Task { @MainActor in
+                            coordinator.selectTab(selectedTabLocal)
+                        }
+                    }
+                    .onReceive(coordinator.$selectedTab) { new in
+                        // keep local state in-sync when coordinator changes
+                        Task { @MainActor in
+                            selectedTabLocal = new
+                        }
+                    }
                 } else {
                     VStack(spacing: 12) {
                         ProgressView()
